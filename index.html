@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Controle — Organica Body & SPA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+<style>
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  input[type=number]::-webkit-inner-spin-button { opacity: 1; }
+  .task-done { text-decoration: line-through; color: #9ca3af; }
+  @media (max-width: 640px) { .mobile-scroll { overflow-x: auto; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const TASKS = [
+  { id: 1, date: "27/03 Qui", task: "Corrigir automacoes quebradas Reportana (PIX, CashBack, Cartao Recusado)", owner: "Yuri", priority: "CRITICO", category: "automacao", seg: "Reportana → fluxos automaticos" },
+  { id: 2, date: "27/03 Qui", task: "Configurar regra frete fixo R$9,90 na Yampi (inicio 01/04)", owner: "Yuri", priority: "CRITICO", category: "frete", seg: "Yampi → config frete todas regioes" },
+  { id: 3, date: "27/03 Qui", task: "Configurar regra 'Frete Gratis' ativavel para 15/04", owner: "Yuri", priority: "ALTA", category: "frete", seg: "Yampi → regra ativavel por data" },
+  { id: 4, date: "27/03 Qui", task: "Configurar 6 novos order bumps para top 3 produtos", owner: "Yuri", priority: "ALTA", category: "bumps", seg: "Yampi → checkout" },
+  { id: 5, date: "28/03 Sex", task: "Ativar automacao Boas-Vindas (3 toques: WPP→Email→WPP)", owner: "Yuri", priority: "ALTA", category: "automacao", seg: "Reportana → fluxo boas-vindas" },
+  { id: 6, date: "28/03 Sex", task: "Configurar 10 upsells estrategicos com matriz cross-sell", owner: "Yuri", priority: "ALTA", category: "bumps", seg: "Yampi → checkout pos-compra" },
+  { id: 7, date: "28/03 Sex", task: "Ressuscitar email carrinho abandonado (SPF/DKIM, subject)", owner: "Yuri", priority: "ALTA", category: "automacao", seg: "Reportana → email carrinho" },
+  { id: 8, date: "30/03 Seg", task: "Preparar reajuste Pomada R$74,99 + Serum R$79,99 (ativar 01/04)", owner: "Yuri", priority: "CRITICO", category: "pricing", seg: "Shopify + Yampi → precos" },
+  { id: 32, date: "30/03 Seg", task: "Criar estaticos Dia da Mentira (carrossel/banners)", owner: "Yuri", priority: "ALTA", category: "promos", seg: "Design → Instagram/Site" },
+  { id: 34, date: "30/03 Seg", task: "Criar video/Reels Dia da Mentira (fake reveal → frete real)", owner: "Joao", priority: "ALTA", category: "promos", seg: "Video → Instagram Reels/Stories" },
+  { id: 9, date: "30/03 Seg", task: "Criar 6 cupons (PASCOA15, FLASH44, DIA44, ROTINA10, VOLTAORGANICA20, MEIOABRIL15)", owner: "Yuri", priority: "CRITICO", category: "promos", seg: "Yampi → cupons com vigencia" },
+  { id: 10, date: "30/03 Seg", task: "Criar 3 Kits na loja (Basico R$119,90 / Completo R$179,90 / Masculino R$134,90)", owner: "Yuri", priority: "ALTA", category: "promos", seg: "Shopify + Yampi → produtos kit" },
+  { id: 11, date: "30/03 Seg", task: "Preparar templates WhatsApp para cada acao de abril", owner: "Yuri", priority: "ALTA", category: "automacao", seg: "Reportana → templates WPP" },
+  { id: 13, date: "30/03 Seg", task: "Selecionar 4 SKUs para Flash 4.4 (44% OFF)", owner: "Octavio", priority: "ALTA", category: "promos", seg: "Analise → margem vs volume" },
+  { id: 14, date: "31/03 Ter", task: "Preparar emails tematicos (Pascoa, 4.4, Frete Fixo)", owner: "Yuri", priority: "ALTA", category: "automacao", seg: "Reportana → templates email" },
+  { id: 15, date: "31/03 Ter", task: "Atualizar banner loja (Frete R$9,90)", owner: "Yuri", priority: "MEDIA", category: "promos", seg: "Shopify → banner home + checkout" },
+  { id: 16, date: "31/03 Ter", task: "Segmentar base RFM para reativacao (133 clientes)", owner: "Yuri", priority: "MEDIA", category: "automacao", seg: "Reportana → segmento RFM risco" },
+  { id: 35, date: "31/03 Ter", task: "Atualizar criativos Meta Ads com callout frete R$9,90", owner: "Kaique", priority: "ALTA", category: "trafego", seg: "Meta Ads → criativos + remarketing 30d" },
+  { id: 17, date: "31/03 Ter", task: "Validar todas automacoes + test sends (checklist 11 itens)", owner: "Yuri", priority: "CRITICO", category: "automacao", seg: "Reportana → teste completo" },
+  { id: 18, date: "01/04 Qua", task: "ATIVAR frete fixo R$9,90 + Reajuste Pomada R$74,99 + Serum R$79,99", owner: "Yuri", priority: "CRITICO", category: "frete", seg: "Yampi → ativar regra + precos" },
+  { id: 19, date: "01/04 Qua", task: "Acao Dia da Mentira: estaticos (Yuri) + video (Joao)", owner: "Yuri/Joao", priority: "ALTA", category: "promos", seg: "Redes → post carrossel + Reels reveal" },
+  { id: 33, date: "01/04 Qua", task: "Disparo WPP+Email+SMS lancamento frete fixo", owner: "Yuri", priority: "ALTA", category: "automacao", seg: "WPP: base opt-in / Email: base / SMS: top 20% RFM" },
+  { id: 21, date: "03/04 Sex", task: "Promo Pascoa — PASCOA15", owner: "Yuri", priority: "ALTA", category: "promos", seg: "WPP: 30-90d / Email: base (-7d) / SMS: nao abriram" },
+  { id: 22, date: "04/04 Sab", task: "FLASH 4.4 — R1: FLASH44 00h-14h / R2: DIA44 14h-24h", owner: "Yuri", priority: "CRITICO", category: "promos", seg: "WPP: R1 base 9h55 + R2 14h30 / Email: 8h+15h" },
+  { id: 23, date: "04/04 Sab", task: "Checkpoint 1: conversao, TM, volume Pomada+Serum", owner: "Octavio", priority: "ALTA", category: "analise", seg: "Dashboard + Yampi API" },
+  { id: 24, date: "06/04 Seg", task: "Lancar Kit 1 Basico R$119,90", owner: "Yuri", priority: "ALTA", category: "promos", seg: "Email: compradores 1 SKU / WPP: Sabonete+Splash 60d" },
+  { id: 25, date: "08/04 Qua", task: "Checkpoint 2 + Campanha Rotina ROTINA10", owner: "Octavio", priority: "CRITICO", category: "analise", seg: "Email+WPP: compradores 1 SKU 90d" },
+  { id: 26, date: "09/04 Qui", task: "Lancar Kit 2 Completo R$179,90", owner: "Yuri", priority: "ALTA", category: "promos", seg: "Email: TM>R$100 / WPP: Cha Branco / SMS: top 10%" },
+  { id: 27, date: "10/04 Sex", task: "Reativacao RFM — VOLTAORGANICA20", owner: "Yuri", priority: "ALTA", category: "automacao", seg: "WPP+Email: 133 clientes risco / SMS: nao reagiram" },
+  { id: 28, date: "13/04 Seg", task: "Lancar Kit 3 Presente Masculino R$134,90", owner: "Yuri", priority: "ALTA", category: "promos", seg: "Email+WPP: compradores Acqua Men" },
+  { id: 29, date: "14/04 Ter", task: "Teaser 'Amanha tem surpresa!'", owner: "Yuri", priority: "ALTA", category: "promos", seg: "WPP: base 18h / Email: base / SMS: carrinho 15d" },
+  { id: 30, date: "15/04 Qua", task: "DIA FRETE GRATIS 24h + MEIOABRIL15", owner: "Yuri", priority: "CRITICO", category: "frete", seg: "TODOS: WPP 9h+20h / Email 8h+17h / SMS 9h30 / Meta +50%" },
+  { id: 31, date: "15/04 Qua", task: "DECISAO GO/NO-GO — Fim do Piloto", owner: "Octavio", priority: "CRITICO", category: "analise", seg: "Consolidar 15 dias → relatorio final" },
+];
+
+const METRICS_BASELINE = {
+  conversao: { label: "Conversao Checkout", baseline: 1.53, target: 2.0, unit: "%" },
+  pedidosDia: { label: "Pedidos/Dia", baseline: 20, target: 24, unit: "" },
+  carrinhos: { label: "Carrinhos Abandonados/Dia", baseline: 1603, target: 1200, unit: "R$", inverse: true },
+  ticketMedio: { label: "Ticket Medio", baseline: 105.37, target: 105, unit: "R$" },
+  pomadaDia: { label: "Pomada (un/dia)", baseline: 10, target: 9, unit: "" },
+  serumDia: { label: "Serum (un/dia)", baseline: 7.5, target: 7, unit: "" },
+  acessorioSolo: { label: "Pedidos Acessorio Solo (<R$30)", baseline: 0, target: 5, unit: "", inverse: true, alert: true },
+};
+
+const CALENDAR_EVENTS = [
+  { date: "01/04", label: "Dia da Mentira + Frete Fixo + Reajuste Pomada & Serum", type: "launch" },
+  { date: "03/04", label: "Sexta Santa — Promo Pascoa PASCOA15", type: "promo" },
+  { date: "04/04", label: "FLASH 4.4 (2 rodadas) + Checkpoint 1", type: "flash" },
+  { date: "05/04", label: "Domingo de Pascoa", type: "holiday" },
+  { date: "06/04", label: "Kit 1 Basico R$119,90", type: "launch" },
+  { date: "08/04", label: "Checkpoint 2 + Campanha Rotina ROTINA10", type: "check" },
+  { date: "09/04", label: "Kit 2 Completo R$179,90 (frete gratis!)", type: "launch" },
+  { date: "10/04", label: "Reativacao RFM — VOLTAORGANICA20", type: "promo" },
+  { date: "13/04", label: "Kit 3 Presente Masculino R$134,90", type: "launch" },
+  { date: "14/04", label: "Teaser 'Amanha tem surpresa!'", type: "promo" },
+  { date: "15/04", label: "DIA FRETE GRATIS + DECISAO GO/NO-GO", type: "critical" },
+];
+
+const CUPONS = [
+  { code: "PASCOA15", desc: "15% OFF min R$120", dates: "03-05/04", seg: "WPP: 30-90d / Email: base / SMS: nao abriram" },
+  { code: "FLASH44", desc: "44% OFF 4 SKUs", dates: "04/04 00-14h", seg: "WPP+Email+SMS: base completa" },
+  { code: "DIA44", desc: "24% OFF 8 SKUs", dates: "04/04 14-24h", seg: "WPP: nao compraram R1 / Email: 15h" },
+  { code: "ROTINA10", desc: "10% OFF 2+ itens", dates: "08-13/04", seg: "Email+WPP: compradores 1 SKU" },
+  { code: "VOLTAORGANICA20", desc: "20% OFF reativacao", dates: "10-12/04", seg: "WPP+Email+SMS: 133 clientes RFM risco" },
+  { code: "MEIOABRIL15", desc: "15% OFF geral", dates: "15/04 24h", seg: "TODOS canais — impacto maximo" },
+];
+
+function loadState(key, fallback) {
+  try { const v = localStorage.getItem("organica_" + key); return v ? JSON.parse(v) : fallback; }
+  catch { return fallback; }
+}
+function saveState(key, val) {
+  try { localStorage.setItem("organica_" + key, JSON.stringify(val)); } catch {}
+}
+
+const priorityColor = (p) => {
+  if (p === "CRITICO") return "bg-red-100 text-red-800 border-red-200";
+  if (p === "ALTA") return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  return "bg-blue-100 text-blue-800 border-blue-200";
+};
+const catIcon = (c) => ({ automacao:"⚙️", frete:"🚚", bumps:"📦", pricing:"💰", promos:"🎯", analise:"📊", trafego:"📡" }[c] || "📋");
+const evColor = (t) => ({ launch:"bg-green-500", frete:"bg-blue-500", promo:"bg-yellow-500", flash:"bg-red-500", holiday:"bg-purple-400", check:"bg-indigo-500", critical:"bg-red-600" }[t] || "bg-gray-500");
+const ownerColor = (o) => {
+  if (o.includes("Yuri")) return "bg-blue-50 text-blue-700 border-blue-200";
+  if (o.includes("Joao")) return "bg-green-50 text-green-700 border-green-200";
+  if (o.includes("Kaique")) return "bg-pink-50 text-pink-700 border-pink-200";
+  return "bg-purple-50 text-purple-700 border-purple-200";
+};
+
+function App() {
+  const [completed, setCompleted] = useState(() => loadState("completed", {}));
+  const [metrics, setMetrics] = useState(() => loadState("metrics", {}));
+  const [activeTab, setActiveTab] = useState("checklist");
+  const [filter, setFilter] = useState("all");
+  const [expandedTask, setExpandedTask] = useState(null);
+
+  useEffect(() => saveState("completed", completed), [completed]);
+  useEffect(() => saveState("metrics", metrics), [metrics]);
+
+  const toggle = (id) => setCompleted(p => ({ ...p, [id]: !p[id] }));
+  const totalTasks = TASKS.length;
+  const doneTasks = Object.values(completed).filter(Boolean).length;
+  const pct = Math.round((doneTasks / totalTasks) * 100);
+
+  const filtered = filter === "all" ? TASKS :
+    filter === "pending" ? TASKS.filter(t => !completed[t.id]) :
+    filter === "done" ? TASKS.filter(t => completed[t.id]) :
+    filter === "yuri" ? TASKS.filter(t => t.owner.includes("Yuri")) :
+    filter === "joao" ? TASKS.filter(t => t.owner.includes("Joao")) :
+    filter === "kaique" ? TASKS.filter(t => t.owner.includes("Kaique")) :
+    filter === "octavio" ? TASKS.filter(t => t.owner === "Octavio") :
+    TASKS.filter(t => t.priority === filter);
+
+  const updateMetric = (key, value) => setMetrics(p => ({ ...p, [key]: parseFloat(value) || 0 }));
+  const getStatus = (key) => {
+    const val = metrics[key]; if (val === undefined || val === 0) return "pending";
+    const m = METRICS_BASELINE[key];
+    if (m.inverse) return val <= m.target ? "positive" : "negative";
+    return val >= m.target ? "positive" : val >= m.baseline ? "neutral" : "negative";
+  };
+  const goNoGo = () => {
+    const keys = Object.keys(METRICS_BASELINE).filter(k => !METRICS_BASELINE[k].alert);
+    let pos = 0; keys.forEach(k => { if (getStatus(k) === "positive") pos++; });
+    return { pos, total: keys.length };
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* HEADER */}
+      <div className="bg-gradient-to-r from-gray-900 via-green-900 to-green-700 text-white p-4 sm:p-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center gap-3 mb-1">
+            <span className="text-2xl">🌿</span>
+            <h1 className="text-xl sm:text-2xl font-bold">Organica Body & SPA</h1>
+          </div>
+          <p className="text-green-200 text-sm">Piloto Frete Fixo R$9,90 | Abril 2026</p>
+          <div className="flex gap-3 mt-4 flex-wrap">
+            <div className="bg-white bg-opacity-10 rounded-lg px-4 py-2 text-center">
+              <div className="text-2xl font-bold">{pct}%</div>
+              <div className="text-xs text-green-200">Progresso</div>
+            </div>
+            <div className="bg-white bg-opacity-10 rounded-lg px-4 py-2 text-center">
+              <div className="text-2xl font-bold">{doneTasks}/{totalTasks}</div>
+              <div className="text-xs text-green-200">Concluidas</div>
+            </div>
+            <div className="flex-1 min-w-0 bg-white bg-opacity-10 rounded-lg px-4 py-2">
+              <div className="w-full bg-white bg-opacity-20 rounded-full h-4 mt-1">
+                <div className="bg-green-400 h-4 rounded-full transition-all" style={{width: pct+"%"}} />
+              </div>
+              <div className="text-xs text-green-200 mt-1">{pct < 30 ? "Vamos acelerar!" : pct < 60 ? "Bom ritmo!" : pct < 90 ? "Quase la!" : "Tudo pronto! 🎉"}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TABS */}
+      <div className="max-w-5xl mx-auto px-3 mt-3">
+        <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm overflow-x-auto">
+          {[["checklist","📋 Checklist"],["metrics","📊 Metricas"],["calendar","📅 Calendario"],["projection","💰 Projecao"]].map(([k,l]) => (
+            <button key={k} onClick={() => setActiveTab(k)}
+              className={"flex-1 py-2 px-2 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap " +
+                (activeTab===k ? "bg-green-600 text-white shadow" : "text-gray-600 hover:bg-gray-100")}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-3 py-4">
+
+        {/* CHECKLIST */}
+        {activeTab === "checklist" && (
+          <div className="fade-in">
+            <div className="flex gap-2 mb-4 flex-wrap">
+              {[["all","Todas"],["pending","Pendentes"],["done","Concluidas"],["yuri","Yuri"],["joao","Joao"],["kaique","Kaique"],["octavio","Octavio"],["CRITICO","Criticas"]].map(([k,l]) => (
+                <button key={k} onClick={() => setFilter(k)}
+                  className={"px-3 py-1 rounded-full text-xs font-medium border transition-all " +
+                    (filter===k ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-600 border-gray-200 hover:border-green-300")}>{l}</button>
+              ))}
+            </div>
+            <div className="space-y-2">
+              {filtered.map(t => (
+                <div key={t.id} className={"rounded-lg border transition-all " + (completed[t.id] ? "bg-green-50 border-green-200 opacity-60" : "bg-white border-gray-200 hover:border-green-300 hover:shadow-sm")}>
+                  <div className="flex items-center gap-3 p-3 cursor-pointer" onClick={() => toggle(t.id)}>
+                    <div className={"w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all " +
+                      (completed[t.id] ? "bg-green-500 border-green-500 text-white" : "border-gray-300")}>
+                      {completed[t.id] && <span className="text-xs">✓</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={"text-sm font-medium " + (completed[t.id] ? "task-done" : "text-gray-800")}>
+                        {catIcon(t.category)} {t.task}
+                      </div>
+                      <div className="flex gap-2 mt-1 flex-wrap">
+                        <span className="text-xs text-gray-500">{t.date}</span>
+                        <span className={"text-xs px-2 py-0.5 rounded-full border " + ownerColor(t.owner)}>{t.owner}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={"text-xs px-2 py-1 rounded-full border font-medium " + priorityColor(t.priority)}>{t.priority}</span>
+                      <button onClick={(e) => { e.stopPropagation(); setExpandedTask(expandedTask === t.id ? null : t.id); }}
+                        className="text-gray-400 hover:text-green-600 text-sm">ℹ️</button>
+                    </div>
+                  </div>
+                  {expandedTask === t.id && (
+                    <div className="px-3 pb-3 pt-0 border-t border-gray-100 bg-blue-50 rounded-b-lg fade-in">
+                      <div className="text-xs text-blue-800 mt-2">
+                        <strong>Segmentacao / Canal:</strong> {t.seg}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* METRICS */}
+        {activeTab === "metrics" && (
+          <div className="fade-in space-y-4">
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <h3 className="font-bold text-gray-800 mb-1">Metricas Diarias do Piloto</h3>
+              <p className="text-xs text-gray-500 mb-4">Preencha com dados Yampi/Reportana. Estado salvo automaticamente no navegador.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {Object.entries(METRICS_BASELINE).map(([key, m]) => {
+                  const st = getStatus(key);
+                  return (
+                    <div key={key} className={"p-3 rounded-lg border-2 " + (st==="positive" ? "border-green-300 bg-green-50" : st==="negative" ? "border-red-300 bg-red-50" : "border-gray-200 bg-gray-50")}>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-medium text-gray-700">{m.label}</span>
+                        <span className={"text-xs font-bold " + (st==="positive" ? "text-green-600" : st==="negative" ? "text-red-600" : "text-gray-400")}>
+                          {st==="positive" ? "✅ GO" : st==="negative" ? "⚠️ ATENCAO" : "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="number" step="0.01" placeholder={"Base: "+m.baseline}
+                          value={metrics[key] || ""} onChange={e => updateMetric(key, e.target.value)}
+                          className="border rounded px-2 py-1 text-sm w-24 focus:border-green-400 focus:ring-1 focus:ring-green-200 outline-none" />
+                        <span className="text-xs text-gray-500">{m.unit} | Base: {m.baseline} | Meta: {m.inverse?"�%":"≥"} {m.target}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-gray-900 to-green-900 rounded-xl p-6 text-white">
+              <h3 className="font-bold text-lg mb-3">Indicador Go / No-Go</h3>
+              {(() => {
+                const { pos, total } = goNoGo();
+                const filled = Object.keys(metrics).filter(k => metrics[k] > 0).length;
+                const pctGo = filled > 0 ? Math.round((pos / total) * 100) : 0;
+                return (
+                  <div>
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className={"text-4xl font-bold " + (pctGo >= 67 ? "text-green-400" : pctGo >= 33 ? "text-yellow-400" : filled === 0 ? "text-gray-500" : "text-red-400")}>
+                        {filled === 0 ? "—" : pctGo+"%"}
+                      </div>
+                      <div>
+                        <div className="text-sm text-green-200">{pos}/{total} metricas no alvo</div>
+                        <div className="text-sm">{pctGo >= 67 ? "🟢 GO — MANTER FRETE FIXO" : pctGo >= 33 ? "🟡 AJUSTAR parametros" : filled===0 ? "Preencha as metricas acima" : "🔴 NO-GO — Considerar encerrar"}</div>
+                      </div>
+                    </div>
+                    <div className="w-full bg-white bg-opacity-20 rounded-full h-4">
+                      <div className={"h-4 rounded-full transition-all " + (pctGo>=67?"bg-green-400":pctGo>=33?"bg-yellow-400":"bg-red-400")} style={{width:pctGo+"%"}} />
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* CALENDAR */}
+        {activeTab === "calendar" && (
+          <div className="fade-in space-y-4">
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <h3 className="font-bold text-gray-800 mb-4">Cronograma 01-15 Abril</h3>
+              <div className="space-y-2">
+                {CALENDAR_EVENTS.map((ev,i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-14 text-right"><div className="text-sm font-bold text-gray-700">{ev.date}</div></div>
+                    <div className={"w-3 h-3 rounded-full flex-shrink-0 " + evColor(ev.type)} />
+                    <div className={"flex-1 py-2 px-3 rounded-lg text-sm " +
+                      (ev.type==="critical" ? "bg-red-100 text-red-800 font-bold border border-red-300" :
+                       ev.type==="flash" ? "bg-red-50 text-red-700 border border-red-200" :
+                       ev.type==="check" ? "bg-indigo-50 text-indigo-700 border border-indigo-200" :
+                       ev.type==="launch" ? "bg-green-50 text-green-700 border border-green-200" :
+                       "bg-gray-50 text-gray-700 border border-gray-200")}>{ev.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <h3 className="font-bold text-gray-800 mb-3">Cupons Configurados</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {CUPONS.map((c,i) => (
+                  <div key={i} className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <div className="flex justify-between items-start">
+                      <div className="font-mono font-bold text-yellow-800 text-sm">{c.code}</div>
+                      <span className="text-xs text-gray-400">{c.dates}</span>
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">{c.desc}</div>
+                    <div className="text-xs text-blue-600 mt-1">📢 {c.seg}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <h3 className="font-bold text-gray-800 mb-3">Kits Autocuidado (escalonados)</h3>
+              <div className="space-y-2">
+                {[
+                  { name: "Kit Basico 'Ritual Diario'", items: "Sabonete + Body Splash", price: "R$119,90", save: "R$15", date: "06/04", seg: "Email: 1 SKU / WPP: Sabonete+Splash 60d" },
+                  { name: "Kit Completo 'Ritual Premium'", items: "Splash + Serum + Sabonete", price: "R$179,90", save: "R$35", date: "09/04", seg: "Email: TM>R$100 / WPP: Cha Branco / SMS: top 10%" },
+                  { name: "Kit Presente Masculino", items: "Pomada + Splash Acqua", price: "R$134,90", save: "R$15", date: "13/04", seg: "Email+WPP: compradores Acqua Men" },
+                ].map((k,i) => (
+                  <div key={i} className="bg-pink-50 border border-pink-200 rounded-lg p-3">
+                    <div className="flex justify-between items-start">
+                      <div><span className="font-bold text-sm text-gray-800">🎁 {k.name}</span><br/><span className="text-xs text-gray-500">{k.items}</span></div>
+                      <div className="text-right"><div className="font-bold text-green-700">{k.price}</div><div className="text-xs text-green-600">Economia {k.save}</div></div>
+                    </div>
+                    <div className="flex justify-between mt-2 text-xs">
+                      <span className="text-pink-700 font-medium">Tancamento: {k.date}</span>
+                      <span className="text-blue-600">📢 {k.seg}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PROJECTION */}
+        {activeTab === "projection" && (
+          <div className="fade-in space-y-4">
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <h3 className="font-bold text-gray-800 mb-3">P&L Mensal — Frete Fixo + Reajuste</h3>
+              {[
+                { label: "(+) Receita reajuste Pomada 270 x R$5", value: "+R$ 1.350", color: "text-green-600" },
+                { label: "(+) Receita reajuste Serum 210 x R$5", value: "+R$ 1.050", color: "text-green-600" },
+                { label: "(+) Recuperacao carrinhos (10% conservador)", value: "+R$ 4.800", color: "text-green-600" },
+                { label: "(-) Custo subsidio frete (~492 pedidos x R$10)", value: "-R$ 4.969", color: "text-red-600" },
+                { label: "(-) Risco ticket minimo (worst case)", value: "-R$ 61", color: "text-red-400" },
+              ].map((item,i) => (
+                <div key={i} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg mb-1">
+                  <span className="text-sm text-gray-700">{item.label}</span>
+                  <span className={"font-mono font-bold " + item.color}>{item.value}</span>
+                </div>
+              ))}
+              <div className="flex justify-between items-center py-3 px-4 bg-green-800 text-white rounded-lg mt-2">
+                <span className="font-bold">RESULTADO LIQUIDO MENSAL</span>
+                <span className="font-mono font-bold text-xl text-green-300">+R$ 2.170</span>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <h3 className="font-bold text-gray-800 mb-3">Projecao Receita Abril</h3>
+              <div className="flex items-center py-1 px-3 mb-2 text-xs text-gray-400">
+                <span className="flex-1"></span><span className="w-20 text-right">Conserv.</span><span className="w-20 text-right font-bold">Provavel</span><span className="w-20 text-right">Otimista</span>
+              </div>
+              {[
+                { label: "Base organica (ritmo atual)", min: "R$65K", mid: "R$69K", max: "R$72K" },
+                { label: "Order Bumps & Upsells", min: "+R$3K", mid: "+R$5K", max: "+R$7K" },
+                { label: "Automacoes corrigidas", min: "+R$3K", mid: "+R$5K", max: "+R$8K" },
+                { label: "Reajuste Pomada + Serum", min: "+R$2K", mid: "+R$2.4K", max: "+R$2.4K" },
+                { label: "Frete Fixo + Frete Gratis", min: "+R$4K", mid: "+R$7K", max: "+R$10K" },
+                { label: "Flash Sales (4.4, Pascoa, Mid)", min: "+R$3K", mid: "+R$5K", max: "+R$8K" },
+                { label: "Reativacao RFM", min: "+R$1K", mid: "+R$2K", max: "+R$3.5K" },
+              ].map((r,i) => (
+                <div key={i} className="flex items-center py-2 border-b border-gray-100">
+                  <span className="flex-1 text-sm text-gray-700">{r.label}</span>
+                  <span className="w-20 text-right text-xs text-gray-500">{r.min}</span>
+                  <span className="w-20 text-right text-sm font-medium text-blue-700">{r.mid}</span>
+                  <span className="w-20 text-right text-xs text-green-600">{r.max}</span>
+                </div>
+              ))}
+              <div className="flex items-center py-3 bg-green-50 rounded-lg mt-2 px-3">
+                <span className="flex-1 font-bold text-gray-800">TOTAL ABRIL</span>
+                <span className="w-20 text-right text-sm text-gray-600">R$81K</span>
+                <span className="w-20 text-right font-bold text-blue-700">R$95.4K</span>
+                <span className="w-20 text-right font-bold text-green-600">R$110.9K</span>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <h3 className="font-bold text-gray-800 mb-3">Equipe</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  { name: "Octavio", role: "Gestor / Decisor", tasks: "Analise metricas, checkpoints, Go/No-Go, segmentacao RFM" },
+                  { name: "Yuri", role: "Operacional + Estaticos", tasks: "Config Yampi, templates email/WPP, disparos, banners, carrosseis" },
+                  { name: "Joao", role: "Video / Reels", tasks: "Videos Reels/Stories, Dia da Mentira, countdowns, unboxing kits" },
+                  { name: "Kaique Sepalla", role: "Trafego / Meta Ads", tasks: "Criativos Meta Ads, budget, remarketing, lookalike" },
+                ].map((p,i) => (
+                  <div key={i} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div className="font-bold text-sm text-gray-800">{p.name}</div>
+                    <div className="text-xs text-green-700 font-medium">{p.role}</div>
+                    <div className="text-xs text-gray-500 mt-1">{p.tasks}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="text-center py-6 text-xs text-gray-400">
+        Organica Body & SPA — Piloto Abril 2026 | Dashboard v2<br/>
+        Estado salvo localmente no navegador (localStorage)
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
